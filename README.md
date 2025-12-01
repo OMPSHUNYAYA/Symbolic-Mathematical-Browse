@@ -479,7 +479,7 @@ SSM-Browse is built on the same deterministic symbolic foundations as:
 
 - **SSM-Tweet** — https://github.com/OMPSHUNYAYA/Symbolic-Mathematical-Tweet  
 - **SSM-Clock** — https://github.com/OMPSHUNYAYA/Symbolic-Mathematical-Clock  
-- **SSMDE** — https://github.com/OMPSHUNYAYA/Symbolic-Mathematical-DE  
+- **SSMDE** — https://github.com/OMPSHUNYAYA/Symbolic-Mathematical-Data-Exchange
 
 SSM-Browse is simply the **browsing expression** of the same mathematical universe —  
 structural truth, no semantics, perfect reproducibility.
