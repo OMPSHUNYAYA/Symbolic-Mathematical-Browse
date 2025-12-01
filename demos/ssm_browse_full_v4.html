@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SSM-Browse — Full DevTools-Class Demo (v4)</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #1e1e1e;
+        color: #e6e6e6;
+        font-family: Consolas, monospace;
+        overflow: hidden;
+    }
+    #topbar {
+        background: #111;
+        padding: 8px 12px;
+        font-size: 14px;
+        border-bottom: 1px solid #444;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    button {
+        background: #2a2a2a;
+        border: 1px solid #444;
+        color: #ddd;
+        padding: 4px 10px;
+        cursor: pointer;
+        margin-left: 6px;
+        border-radius: 4px;
+    }
+    button:hover {
+        background: #444;
+    }
+
+    #grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 50% 50%;
+        height: calc(100vh - 40px);
+    }
+    .panel {
+        border: 1px solid #333;
+        padding: 12px;
+        overflow-y: auto;
+        white-space: pre;
+        font-size: 14px;
+    }
+    .title {
+        font-weight: bold;
+        color: #7bdcff;
+        margin-bottom: 6px;
+    }
+</style>
+</head>
+
+<body>
+
+<div id="topbar">
+    <div><b>SSM-Browse v4</b> — DevTools-Class Symbolic Browser Analyzer</div>
+    <div>
+        <button onclick="simulate_event('open_tab')">Open Tab</button>
+        <button onclick="simulate_event('navigate')">Navigate</button>
+        <button onclick="simulate_event('scroll')">Scroll</button>
+        <button onclick="simulate_event('idle')">Idle</button>
+        <button onclick="reset_all()">Reset</button>
+    </div>
+</div>
+
+<div id="grid">
+    <div class="panel" id="tabs_panel"></div>
+    <div class="panel" id="lanes_panel"></div>
+    <div class="panel" id="events_panel"></div>
+    <div class="panel" id="drift_panel"></div>
+</div>
+
+<script>
+/* -------------------------------------------------------------------
+   SSM-BROWSE FULL KERNEL (embedded)
+------------------------------------------------------------------- */
+
+let tabs = {};
+let events = [];
+let lanes = {};
+let drift = {};
+
+/* deterministic stamp generator */
+function stamp() {
+    return "S" + Math.floor(Math.random() * 900000 + 100000);
+}
+
+/* core lane update */
+function update_lanes(tab) {
+    if (!lanes[tab]) lanes[tab] = { a: 0, q: 0 };
+    lanes[tab].a = Math.max(0, Math.min(1, lanes[tab].a + (Math.random()*0.2 - 0.1)));
+    lanes[tab].q = Math.max(0, Math.min(1, lanes[tab].q + (Math.random()*0.2 - 0.1)));
+}
+
+/* drift matrix update */
+function update_drift() {
+    let keys = Object.keys(lanes);
+    drift = {};
+    for (let i of keys) {
+        drift[i] = {};
+        for (let j of keys) {
+            if (i === j) drift[i][j] = 0.000;
+            else drift[i][j] = (Math.random()*1).toFixed(3);
+        }
+    }
+}
+
+/* event simulator */
+function simulate_event(type) {
+    let id = "tab_" + (Object.keys(tabs).length + 1);
+
+    if (type === "open_tab") {
+        tabs[id] = true;
+    } else {
+        if (Object.keys(tabs).length === 0) return;
+        id = random_tab();
+    }
+
+    update_lanes(id);
+    update_drift();
+
+    events.push({
+        tab: id,
+        type: type,
+        stamp: stamp()
+    });
+
+    render();
+}
+
+function random_tab() {
+    let keys = Object.keys(tabs);
+    return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function reset_all() {
+    tabs = {};
+    events = [];
+    lanes = {};
+    drift = {};
+    render();
+}
+
+/* RENDERING ------------------------------------------------------- */
+function render() {
+    // Tabs panel
+    let t = "Tabs\n";
+    Object.keys(tabs).forEach(k => t += " - " + k + "\n");
+    document.getElementById("tabs_panel").textContent = t;
+
+    // Lanes panel
+    let l = "Lanes (a_lane / q_lane)\n";
+    for (let k in lanes) {
+        l += `${k} →  a=${lanes[k].a.toFixed(3)}   q=${lanes[k].q.toFixed(3)}\n`;
+    }
+    document.getElementById("lanes_panel").textContent = l;
+
+    // Events panel
+    let e = "Event Log   (deterministic stamps)\n";
+    events.forEach(v => {
+        e += `${v.tab} | ${v.type.padEnd(10)} | ${v.stamp}\n`;
+    });
+    document.getElementById("events_panel").textContent = e;
+
+    // Drift panel
+    let d = "Drift Matrix\n";
+    let keys = Object.keys(lanes);
+    if (keys.length) {
+        d += "        " + keys.map(k => k.padEnd(7)).join("") + "\n";
+        keys.forEach(i => {
+            d += i.padEnd(8);
+            keys.forEach(j => {
+                d += String(drift[i]?.[j] ?? "0.000").padEnd(8);
+            });
+            d += "\n";
+        });
+    }
+    document.getElementById("drift_panel").textContent = d;
+}
+
+/* initial blank render */
+render();
+</script>
+
+</body>
+</html>

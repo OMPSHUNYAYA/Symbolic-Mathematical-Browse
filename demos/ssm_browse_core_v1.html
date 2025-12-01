@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SSM-Browse — Symbolic Mini Browser (A+ Edition)</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #fafafa;
+        margin: 20px;
+    }
+
+    h1 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    .tab-container {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .tab {
+        padding: 8px 14px;
+        background: #e0e0e0;
+        border-radius: 6px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .tab.active {
+        background: #2196f3;
+        color: white;
+    }
+
+    .panel {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        margin-bottom: 30px;
+    }
+
+    .block {
+        background: #f4f4f4;
+        border-left: 4px solid #2196f3;
+        padding: 10px 12px;
+        margin-bottom: 18px;
+        font-size: 14px;
+    }
+
+    .event {
+        background: #fff;
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        border-radius: 5px;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+</style>
+</head>
+<body>
+
+<h1>SSM-Browse — Symbolic Mini Browser</h1>
+<p><b>Edition:</b> A+ (Manifest + ZETA-0 + Envelope Block)</p>
+
+<div class="tab-container">
+    <div class="tab active" onclick="switchTab(0)">Tab 1</div>
+    <div class="tab" onclick="switchTab(1)">Tab 2</div>
+    <div class="tab" onclick="switchTab(2)">Tab 3</div>
+</div>
+
+<div id="panel" class="panel"></div>
+
+<script>
+/* -----------------------------
+   SSM-BROWSE SYMBOLIC STATE
+------------------------------ */
+
+let tabs = [
+    { id: 1, a_lane: 0.00, q_lane: 0.00, stamps: [], events: [] },
+    { id: 2, a_lane: 0.00, q_lane: 0.00, stamps: [], events: [] },
+    { id: 3, a_lane: 0.00, q_lane: 0.00, stamps: [], events: [] }
+];
+
+const MANIFEST_ID = "default_v1";
+const ZETA0_STATUS = "None in this session";
+
+/* deterministic stamping */
+function stampEvent(input) {
+    return btoa(unescape(encodeURIComponent(input))).slice(0, 12);
+}
+
+/* add event */
+function addEvent(tabIndex, type) {
+    let t = tabs[tabIndex];
+
+    let stamp = stampEvent(type + "_" + (t.events.length + 1));
+    t.stamps.push(stamp);
+
+    let evt = {
+        type: type,
+        stamp: stamp
+    };
+
+    t.events.push(evt);
+
+    /* symbolic lane updates (bounded but simple) */
+    t.a_lane = parseFloat((t.a_lane + 0.07).toFixed(3));
+    if (t.a_lane > 0.99) t.a_lane = 0.99;
+
+    t.q_lane = parseFloat((t.q_lane + 0.15).toFixed(3));
+    if (t.q_lane > 0.99) t.q_lane = 0.99;
+
+    render(tabIndex);
+}
+
+/* render tab panel */
+function render(index) {
+    let t = tabs[index];
+
+    let html = "";
+
+    /* envelope block */
+    html += `
+        <div class="block">
+            <b>Envelope</b><br>
+            a_lane: ${t.a_lane}<br>
+            q_lane: ${t.q_lane}<br>
+            manifest: ${MANIFEST_ID}<br>
+            ZETA-0: ${ZETA0_STATUS}<br>
+            stamp_count: ${t.stamps.length}
+        </div>
+    `;
+
+    /* events */
+    html += `<b>Events</b><br>`;
+    if (t.events.length === 0) {
+        html += `<i>No events yet.</i>`;
+    } else {
+        t.events.forEach(e => {
+            html += `
+                <div class="event">
+                    <b>${e.type}</b><br>
+                    stamp: ${e.stamp}
+                </div>
+            `;
+        });
+    }
+
+    /* actions */
+    html += `
+        <br><b>Add Event:</b><br>
+        <button onclick="addEvent(${index}, 'open_tab')">open_tab</button>
+        <button onclick="addEvent(${index}, 'scroll')">scroll</button>
+        <button onclick="addEvent(${index}, 'navigate')">navigate</button>
+        <button onclick="addEvent(${index}, 'idle')">idle</button>
+    `;
+
+    document.getElementById("panel").innerHTML = html;
+}
+
+/* switch tabs */
+function switchTab(i) {
+    document.querySelectorAll(".tab").forEach((t, idx) => {
+        if (idx === i) t.classList.add("active");
+        else t.classList.remove("active");
+    });
+    render(i);
+}
+
+/* initialize */
+render(0);
+
+</script>
+
+</body>
+</html>

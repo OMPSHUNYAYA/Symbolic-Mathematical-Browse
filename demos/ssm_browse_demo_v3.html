@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SSM-Browse — DevTools-Class Demo (v3, A1 Minimalistic)</title>
+
+<style>
+body {
+    margin:0;
+    font-family: Consolas, "Courier New", monospace;
+    background:#fafafa;
+    overflow:hidden;
+}
+
+/* Panel layout */
+#container {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 40% 60%;
+    height:100vh;
+    gap:2px;
+}
+
+/* Generic DevTools-style panel */
+.panel {
+    background:white;
+    border:1px solid #ccc;
+    padding:10px;
+    overflow:auto;
+    font-size:13px;
+}
+
+.panel h2 {
+    margin:0 0 6px 0;
+    font-size:14px;
+    font-weight:bold;
+}
+
+/* Tabs panel */
+#tabs { grid-row:1 / 2; grid-column:1 / 2; }
+
+/* Lanes panel */
+#lanes { grid-row:1 / 2; grid-column:2 / 3; }
+
+/* Event log */
+#events { grid-row:2 / 3; grid-column:1 / 2; }
+
+/* Drift matrix */
+#drift { grid-row:2 / 3; grid-column:2 / 3; }
+
+.code {
+    white-space:pre;
+    font-family: Consolas, monospace;
+}
+
+/* Small labels */
+.badge {
+    background:#eee;
+    padding:2px 4px;
+    border-radius:3px;
+    margin-left:6px;
+    font-size:11px;
+    border:1px solid #ddd;
+}
+</style>
+
+</head>
+<body>
+
+<div id="container">
+
+    <div class="panel" id="tabs">
+        <h2>Tabs</h2>
+        <div id="tabs_list" class="code"></div>
+    </div>
+
+    <div class="panel" id="lanes">
+        <h2>Lanes (a_lane / q_lane)</h2>
+        <div id="lanes_data" class="code"></div>
+    </div>
+
+    <div class="panel" id="events">
+        <h2>Event Log <span class="badge">deterministic stamps</span></h2>
+        <div id="events_list" class="code"></div>
+    </div>
+
+    <div class="panel" id="drift">
+        <h2>Drift Matrix</h2>
+        <div id="drift_matrix" class="code"></div>
+    </div>
+
+</div>
+
+<script>
+// -----------------------------------------------------
+// Minimalistic SSM-Browse Kernel (A1 Version)
+// -----------------------------------------------------
+
+function clamp(x, low, high){ return Math.min(Math.max(x, low), high); }
+function atanh(x){ return 0.5 * Math.log((1+x)/(1-x)); }
+function tanh(x){ return Math.tanh(x); }
+
+function computeLane(raw){
+    const eps = 1e-9;
+    const c = clamp(raw, -1+eps, 1-eps);
+    const u = atanh(c);
+    return tanh(u);
+}
+
+function sha256(str){
+    // Lightweight deterministic hashing (not secure, but reproducible)
+    let hash = 0;
+    for (let i=0; i<str.length; i++){
+        hash = (hash + str.charCodeAt(i) * 17) % 999999;
+    }
+    return "S" + hash.toString().padStart(6,"0");
+}
+
+// -----------------------------------------------------
+// Demo Data
+// -----------------------------------------------------
+
+let tabs = ["tab_1","tab_2","tab_3"];
+
+let laneData = {
+    tab_1:{a:computeLane(+0.31), q:computeLane(+0.12)},
+    tab_2:{a:computeLane(+0.55), q:computeLane(+0.22)},
+    tab_3:{a:computeLane(-0.20), q:computeLane(+0.05)}
+};
+
+let events = [
+    {tab:"tab_1", type:"open_tab"},
+    {tab:"tab_1", type:"navigate"},
+    {tab:"tab_2", type:"open_tab"},
+    {tab:"tab_3", type:"open_tab"},
+    {tab:"tab_3", type:"scroll"},
+    {tab:"tab_1", type:"idle"},
+];
+
+events.forEach(e => {
+    e.stamp = sha256(e.tab + "|" + e.type);
+});
+
+// Drift = absolute lane difference
+function computeDrift(){
+    let mat = {};
+    for (let t1 of tabs){
+        mat[t1] = {};
+        for (let t2 of tabs){
+            let d = Math.abs(laneData[t1].a - laneData[t2].a).toFixed(3);
+            mat[t1][t2] = d;
+        }
+    }
+    return mat;
+}
+
+let drift = computeDrift();
+
+// -----------------------------------------------------
+// Render Panels
+// -----------------------------------------------------
+
+function render(){
+    document.getElementById("tabs_list").textContent =
+        tabs.map(t => "- " + t).join("\n");
+
+    document.getElementById("lanes_data").textContent =
+        tabs.map(t => 
+            t + " →  a=" + laneData[t].a.toFixed(3) +
+            "   q=" + laneData[t].q.toFixed(3)
+        ).join("\n");
+
+    document.getElementById("events_list").textContent =
+        events.map(e =>
+            e.tab + "  | " + e.type + "  |  " + e.stamp
+        ).join("\n");
+
+    let out = "";
+    for (let t1 of tabs){
+        out += t1 + "   " + 
+            tabs.map(t2 => drift[t1][t2]).join("   ") + "\n";
+    }
+    document.getElementById("drift_matrix").textContent = out;
+}
+
+render();
+
+</script>
+
+</body>
+</html>

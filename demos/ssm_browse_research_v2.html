@@ -1,0 +1,188 @@
+<html>
+<head>
+    <title>SSM-Browse — Unified Mini Browser</title>
+    <style>
+        body { font-family: Arial; }
+        .tab_section { margin-left: 220px; padding: 20px; display:none; }
+        #sidebar { width: 180px; position: fixed; top: 0; left: 0; padding: 20px; }
+        .tab_button { display:block; margin:10px 0; padding:8px; background:#ddd; border:1px solid #aaa; cursor:pointer; }
+        .pass { background:#b6f5b6; }
+        .fail { background:#ffb3b3; }
+        .warn { background:#ffe9a8; }
+    </style>
+
+    <script>
+        function showTab(id) {
+            var secs = document.getElementsByClassName('tab_section');
+            for (var i=0; i<secs.length; i++) secs[i].style.display = 'none';
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function loadReplayIntegrity() {
+            const events = [
+                { tab:"tab_1", type:"open_tab", meta:"{'page': 'home'}", stamp:"b676aff8cf912af3" },
+                { tab:"tab_1", type:"scroll", meta:"{'from': 10, 'to': 40}", stamp:"b693561fbe2eb579" },
+
+                { tab:"tab_2", type:"open_tab", meta:"{'page': 'dashboard'}", stamp:"526eb9602069a796" },
+                { tab:"tab_2", type:"navigate", meta:"{'url': 'stats'}", stamp:"08a49c001a4bb894" },
+
+                { tab:"tab_3", type:"open_tab", meta:"{'page': 'home'}", stamp:"638e9811ead2a321" },
+                { tab:"tab_3", type:"idle", meta:"{}", stamp:"8c031cecab4716ae" }
+            ];
+
+            let html = "<table border='1' cellpadding='6'><tr><th>#</th><th>Tab</th><th>Type</th><th>Metadata</th><th>Stamp</th><th>Status</th></tr>";
+
+            for (let i = 0; i < events.length; i++) {
+                let e = events[i];
+                let status = "pass";
+                let statusLabel = "OK";
+
+                // Integrity rules
+                if (e.type === "scroll") {
+                    if (!e.meta.includes("'from': 10") || !e.meta.includes("'to': 40")) {
+                        status = "fail"; statusLabel = "BAD: Scroll mismatch";
+                    }
+                }
+
+                if (e.type === "open_tab") {
+                    if (!e.meta.includes("'page'")) {
+                        status = "fail"; statusLabel = "BAD: Missing page";
+                    }
+                }
+
+                if (e.type === "navigate") {
+                    if (!e.meta.includes("'url'")) {
+                        status = "fail"; statusLabel = "BAD: Missing URL";
+                    }
+                }
+
+                if (e.type === "idle") {
+                    if (e.meta !== "{}") {
+                        status = "warn"; statusLabel = "WARN: Idle metadata changed";
+                    }
+                }
+
+                html += "<tr class='" + status + "'>" +
+                        "<td>"+(i+1)+"</td>" +
+                        "<td>"+e.tab+"</td>" +
+                        "<td>"+e.type+"</td>" +
+                        "<td>"+e.meta+"</td>" +
+                        "<td>"+e.stamp+"</td>" +
+                        "<td>"+statusLabel+"</td>" +
+                        "</tr>";
+            }
+
+            html += "</table>";
+            document.getElementById("replay_integrity_body").innerHTML = html;
+        }
+
+        window.onload = function() {
+            showTab("tab_1");
+            loadReplayIntegrity();
+        }
+    </script>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <h3>Tabs</h3>
+        <div class='tab_button' onclick='showTab("tab_1")'>tab_1</div>
+        <div class='tab_button' onclick='showTab("tab_2")'>tab_2</div>
+        <div class='tab_button' onclick='showTab("tab_3")'>tab_3</div>
+        <div class='tab_button' onclick='showTab("drift_matrix")'>Drift Matrix</div>
+        <div class='tab_button' onclick='showTab("replay_integrity")'>Replay Integrity</div>
+    </div>
+
+    <h1 style="margin-left:220px;">SSM-Browse — Unified Mini Browser</h1>
+
+    <!-- TAB 1 -->
+    <div id="tab_1" class="tab_section">
+        <h2>tab_1 — Symbolic Details</h2>
+        <table border="1" cellpadding="6">
+            <tr><th>Lane</th><th>Value</th></tr>
+            <tr><td>a_lane</td><td>0.35</td></tr>
+            <tr><td>q_lane</td><td>1.15</td></tr>
+        </table>
+
+        <h3>Events</h3>
+        <table border="1" cellpadding="6">
+            <tr><th>Type</th><th>Metadata</th><th>Stamp</th></tr>
+            <tr><td>open_tab</td><td>{'page': 'home'}</td><td>b676aff8cf912af3</td></tr>
+            <tr><td>scroll</td><td>{'from': 10, 'to': 40}</td><td>b693561fbe2eb579</td></tr>
+        </table>
+        <hr>
+    </div>
+
+    <!-- TAB 2 -->
+    <div id="tab_2" class="tab_section">
+        <h2>tab_2 — Symbolic Details</h2>
+        <table border="1" cellpadding="6">
+            <tr><th>Lane</th><th>Value</th></tr>
+            <tr><td>a_lane</td><td>0.5</td></tr>
+            <tr><td>q_lane</td><td>1.35</td></tr>
+        </table>
+
+        <h3>Events</h3>
+        <table border="1" cellpadding="6">
+            <tr><th>Type</th><th>Metadata</th><th>Stamp</th></tr>
+            <tr><td>open_tab</td><td>{'page': 'dashboard'}</td><td>526eb9602069a796</td></tr>
+            <tr><td>navigate</td><td>{'url': 'stats'}</td><td>08a49c001a4bb894</td></tr>
+        </table>
+        <hr>
+    </div>
+
+    <!-- TAB 3 -->
+    <div id="tab_3" class="tab_section">
+        <h2>tab_3 — Symbolic Details</h2>
+        <table border="1" cellpadding="6">
+            <tr><th>Lane</th><th>Value</th></tr>
+            <tr><td>a_lane</td><td>0.1</td></tr>
+            <tr><td>q_lane</td><td>1.1</td></tr>
+        </table>
+
+        <h3>Events</h3>
+        <table border="1" cellpadding="6">
+            <tr><th>Type</th><th>Metadata</th><th>Stamp</th></tr>
+            <tr><td>open_tab</td><td>{'page': 'home'}</td><td>638e9811ead2a321</td></tr>
+            <tr><td>idle</td><td>{}</td><td>8c031cecab4716ae</td></tr>
+        </table>
+        <hr>
+    </div>
+
+    <!-- DRIFT MATRIX -->
+    <div id="drift_matrix" class="tab_section">
+        <h2>Drift Matrix</h2>
+
+        <table border="1" cellpadding="6">
+            <tr><th></th><th>tab_1</th><th>tab_2</th><th>tab_3</th></tr>
+            <tr><th>tab_1</th>
+                <td style='background:#b6f5b6'>0.0 (Stable)</td>
+                <td style='background:#b6f5b6'>0.15 (Stable)</td>
+                <td style='background:#ffe9a8'>0.25 (Diverging)</td></tr>
+            <tr><th>tab_2</th>
+                <td style='background:#b6f5b6'>0.15 (Stable)</td>
+                <td style='background:#b6f5b6'>0.0 (Stable)</td>
+                <td style='background:#ffe9a8'>0.4 (Diverging)</td></tr>
+            <tr><th>tab_3</th>
+                <td style='background:#ffe9a8'>0.25 (Diverging)</td>
+                <td style='background:#ffe9a8'>0.4 (Diverging)</td>
+                <td style='background:#b6f5b6'>0.0 (Stable)</td></tr>
+        </table>
+
+        <h3>Legend</h3>
+        <table border="1" cellpadding="6">
+            <tr><td style="background:#b6f5b6">Stable &lt; 0.20</td></tr>
+            <tr><td style="background:#ffe9a8">Diverging 0.20 – 0.50</td></tr>
+            <tr><td style="background:#ffb3b3">Unstable ≥ 0.50</td></tr>
+        </table>
+    </div>
+
+    <!-- REPLAY INTEGRITY -->
+    <div id="replay_integrity" class="tab_section">
+        <h2>Replay Integrity</h2>
+        <div id="replay_integrity_body"></div>
+    </div>
+
+</body>
+</html>
