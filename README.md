@@ -132,7 +132,8 @@ It provides **structural envelopes only**, with no semantic access and no interp
 
 ### **Specs**
 - [Quickstart Guide](specs/Quickstart.md)  
-- [FAQ](specs/FAQ.md)  
+- [FAQ](specs/FAQ.md)
+- [Security FAQ](specs/FAQ_SECURITY.md)  
 
 ### **Demos**
 - [Core Edition (v1)](demos/ssm_browse_core_v1.html)  
